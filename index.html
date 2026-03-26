@@ -896,12 +896,12 @@
 
       // Normalize to [0, 2π)
       const norm = (a) => ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-      // winnerAngle is the ANGLE of winning slice in wheel coords
+      // winnerAngle = winning slice's position in canvas coords (WITHOUT currentRotation)
       const winnerAngle = (winnerIndex + 0.5) * sliceAngle;
-      // The winning slice's CURRENT angle in CSS space = normalize(winnerAngle + currentRotation)
-      // We need: winnerAngle + currentRotation + delta ≡ 0 (mod 2π)
-      // delta = -normalize(winnerAngle + currentRotation)
-      const delta = -norm(winnerAngle + currentRotation);
+      // The winning slice's ACTUAL current angle in CSS space = winnerAngle + currentRotation
+      // Pointer is at CSS angle 0, which is canvas angle 3π/2 (top)
+      // We need: winnerAngle + currentRotation + delta ≡ 3π/2 (mod 2π)
+      const delta = (3 * Math.PI / 2) - (winnerAngle + currentRotation);
       const extraSpins = 5 * Math.PI * 2; // 5 full rotations
       const targetRotation = currentRotation + extraSpins + delta;
 
