@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日吃什么转盘</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #f4a261;
+      --accent: #e76f51;
+      --bg: #1a1008;
+      --card: #2d1f0f;
+      --card-light: #3d2a14;
+      --text: #fff8f0;
+      --text-muted: #c4a882;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Auth Section */
+    #auth-section {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+
+    #auth-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    #auth-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(231, 111, 81, 0.4);
+    }
+
+    #user-info {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    #user-info img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+
+    #logout-btn {
+      background: transparent;
+      border: 1px solid var(--text-muted);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    #logout-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Main Layout */
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin: 20px 0 10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      background: var(--card);
+      border: 2px solid transparent;
+      color: var(--text-muted);
+      padding: 10px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: var(--card-light);
+    }
+
+    /* Pages */
+    .page { display: none; width: 100%; max-width: 600px; }
+    .page.active { display: block; }
+
+    /* Wheel */
+    #wheel-page { text-align: center; }
+
+    #wheel-container {
+      position: relative;
+      width: min(70vw, 400px);
+      height: min(70vw, 400px);
+      margin: 20px auto;
+    }
+
+    #wheel-canvas {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 20px rgba(244, 162, 97, 0.3));
+      transition: transform 0s;
+    }
+
+    #wheel-canvas.spinning {
+      transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    }
+
+    .wheel-emoji {
+      position: absolute;
+      font-size: 24px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    #spin-btn {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      border: none;
+      padding: 15px 50px;
+      border-radius: 30px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    #spin-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(244, 162, 97, 0.5);
+    }
+
+    #spin-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .login-prompt {
+      background: var(--card);
+      padding: 30px;
+      border-radius: 20px;
+      margin: 40px 0;
+      text-align: center;
+    }
+
+    .login-prompt h3 { color: var(--primary); margin-bottom: 10px; }
+    .login-prompt p { color: var(--text-muted); font-size: 14px; }
+
+    /* Dishes Page */
+    #dishes-page { padding: 0 10px; }
+
+    .dish-form {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .dish-form h3 { margin-bottom: 15px; color: var(--primary); }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .form-group {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--card-light);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary { background: var(--primary); color: var(--bg); }
+    .btn-secondary { background: var(--card-light); color: var(--text); }
+    .btn-danger { background: #d32f2f; color: white; }
+
+    .btn:hover { transform: scale(1.03); }
+    .btn:active { transform: scale(0.98); }
+
+    #dishes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .dish-card {
+      background: var(--card);
+      padding: 15px;
+      border-radius: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .dish-info { flex: 1; }
+
+    .dish-name {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .dish-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+
+    .difficulty-badge {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+
+    .diff-easy { background: #2e7d32; color: white; }
+    .diff-medium { background: #f9a825; color: #1a1008; }
+    .diff-hard { background: #c62828; color: white; }
+
+    .dish-actions { display: flex; gap: 8px; }
+
+    .dish-actions .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Modal */
+    #result-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    #result-modal.show { display: flex; }
+
+    .modal-card {
+      background: var(--card);
+      padding: 40px;
+      border-radius: 25px;
+      text-align: center;
+      max-width: 350px;
+      width: 100%;
+      animation: bounceIn 0.5s ease-out;
+    }
+
+    @keyframes bounceIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-emoji { font-size: 60px; margin-bottom: 15px; }
+
+    .modal-title {
+      font-size: 24px;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .modal-meta {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 15px 0;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .modal-actions { margin-top: 25px; }
+
+    .modal-actions .btn {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+    }
+
+    .btn-cook {
+      background: linear-gradient(135deg, #2e7d32, #1b5e20);
+      color: white;
+    }
+
+    .btn-close {
+      background: transparent;
+      border: 1px solid var(--text-muted);
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    /* History section */
+    .history-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--card-light);
+    }
+
+    .history-section h4 {
+      color: var(--text-muted);
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      background: var(--card-light);
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-item .date { color: var(--text-muted); font-size: 11px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 15px; }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-muted);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--card-light); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- Auth -->
+  <div id="auth-section">
+    <button id="auth-btn" onclick="signIn()">🔐 登录 Google</button>
+    <div id="user-info">
+      <img id="user-avatar" src="" alt="">
+      <span id="user-name"></span>
+      <button id="logout-btn" onclick="signOut()">退出</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>🍳 今日吃什么</h1>
+    <p class="subtitle">让命运决定你的晚餐</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showPage('wheel')">🎡 转盘</button>
+      <button class="tab-btn" onclick="showPage('dishes')">📝 菜谱</button>
+    </div>
+
+    <!-- Wheel Page -->
+    <div id="wheel-page" class="page active">
+      <div id="login-prompt-wheel" class="login-prompt" style="display:none;">
+        <h3>请先登录</h3>
+        <p>登录后可以管理你的菜谱，转盘将使用你的菜品</p>
+      </div>
+
+      <div id="wheel-container">
+        <canvas id="wheel-canvas" width="400" height="400"></canvas>
+      </div>
+
+      <button id="spin-btn" onclick="spinWheel()" disabled>🎲 开始旋转</button>
+    </div>
+
+    <!-- Dishes Page -->
+    <div id="dishes-page" class="page">
+      <div id="login-prompt-dishes" class="login-prompt" style="display:none;">
+        <h3>请先登录</h3>
+        <p>登录后可以添加和管理你的菜谱</p>
+      </div>
+
+      <div id="dishes-authenticated">
+        <div class="dish-form">
+          <h3 id="form-title">➕ 添加菜品</h3>
+          <input type="hidden" id="edit-id">
+          <div class="form-row">
+            <div class="form-group" style="flex:2">
+              <label>菜名</label>
+              <input type="text" id="dish-name" placeholder="例：红烧肉">
+            </div>
+            <div class="form-group">
+              <label>权重</label>
+              <input type="number" id="dish-weight" value="1" min="1" max="10">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>难度</label>
+              <select id="dish-difficulty">
+                <option value="easy">🟢 简单</option>
+                <option value="medium">🟡 中等</option>
+                <option value="hard">🔴 困难</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>分类</label>
+              <select id="dish-category">
+                <option value="home">家常菜</option>
+                <option value="quick">快手菜</option>
+                <option value="fancy">硬菜</option>
+                <option value="dessert">甜点</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>时间(分钟)</label>
+              <input type="number" id="dish-time" value="30" min="1">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="saveDish()">保存</button>
+            <button class="btn btn-secondary" onclick="resetForm()">取消</button>
+          </div>
+        </div>
+
+        <div id="dishes-list"></div>
+
+        <div class="history-section">
+          <h4>📜 今日做饭记录</h4>
+          <div id="history-list" class="history-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Modal -->
+  <div id="result-modal">
+    <div class="modal-card">
+      <div class="modal-emoji">🍽️</div>
+      <h2 class="modal-title" id="result-name"></h2>
+      <div class="modal-meta">
+        <span id="result-difficulty"></span>
+        <span id="result-time"></span>
+        <span id="result-category"></span>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cook" onclick="cookThis()">👨‍🍳 就做这个！</button>
+        <button class="btn btn-close" onclick="closeModal()">再转一次</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, where, orderBy, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    // TODO: 填入你的 Firebase 配置
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    let app, auth, db;
+    let currentUser = null;
+    let dishes = [];
+    let unsubscribeDishes = null;
+    let unsubscribeHistory = null;
+
+    function initFirebase() {
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        onAuthStateChanged(auth, handleAuthStateChange);
+      } catch (e) {
+        console.error('Firebase init error:', e);
+      }
+    }
+
+    function handleAuthStateChange(user) {
+      currentUser = user;
+      if (user) {
+        document.getElementById('auth-btn').style.display = 'none';
+        document.getElementById('user-info').style.display = 'flex';
+        document.getElementById('user-avatar').src = user.photoURL || 'https://api.dicebear.com/7.x/initials/svg?backgroundColor=f4a261';
+        document.getElementById('user-name').textContent = user.displayName || user.email;
+        document.getElementById('login-prompt-wheel').style.display = 'none';
+        document.getElementById('login-prompt-dishes').style.display = 'none';
+        document.getElementById('dishes-authenticated').style.display = 'block';
+        document.getElementById('spin-btn').disabled = false;
+        subscribeToDishes();
+        subscribeToHistory();
+      } else {
+        document.getElementById('auth-btn').style.display = 'block';
+        document.getElementById('user-info').style.display = 'none';
+        document.getElementById('login-prompt-wheel').style.display = 'block';
+        document.getElementById('login-prompt-dishes').style.display = 'block';
+        document.getElementById('dishes-authenticated').style.display = 'none';
+        document.getElementById('spin-btn').disabled = true;
+        if (unsubscribeDishes) unsubscribeDishes();
+        if (unsubscribeHistory) unsubscribeHistory();
+        dishes = [];
+        drawWheel();
+      }
+    }
+
+    window.signIn = function() {
+      if (!auth) return;
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider).catch(e => alert('登录失败: ' + e.message));
+    };
+
+    window.signOut = function() {
+      if (!auth) return;
+      signOut(auth);
+    };
+
+    // Dishes CRUD
+    function subscribeToDishes() {
+      if (unsubscribeDishes) unsubscribeDishes();
+      const q = query(collection(db, 'dishes'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc'));
+      unsubscribeDishes = onSnapshot(q, snapshot => {
+        dishes = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        drawWheel();
+        renderDishes();
+      });
+    }
+
+    function subscribeToHistory() {
+      if (unsubscribeHistory) unsubscribeHistory();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const q = query(
+        collection(db, 'history'),
+        where('userId', '==', currentUser.uid),
+        where('cookedAt', '>=', today),
+        orderBy('cookedAt', 'desc')
+      );
+      unsubscribeHistory = onSnapshot(q, snapshot => {
+        const history = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderHistory(history);
+      });
+    }
+
+    window.saveDish = async function() {
+      if (!currentUser || !db) return;
+      const id = document.getElementById('edit-id').value;
+      const name = document.getElementById('dish-name').value.trim();
+      const difficulty = document.getElementById('dish-difficulty').value;
+      const category = document.getElementById('dish-category').value;
+      const time = parseInt(document.getElementById('dish-time').value) || 30;
+      const weight = parseInt(document.getElementById('dish-weight').value) || 1;
+
+      if (!name) { alert('请输入菜名'); return; }
+
+      try {
+        if (id) {
+          await updateDoc(doc(db, 'dishes', id), { name, difficulty, category, time, weight });
+        } else {
+          await addDoc(collection(db, 'dishes'), {
+            userId: currentUser.uid,
+            name, difficulty, category, time, weight,
+            createdAt: serverTimestamp()
+          });
+        }
+        resetForm();
+      } catch (e) { alert('保存失败: ' + e.message); }
+    };
+
+    window.deleteDish = async function(id) {
+      if (!db) return;
+      if (!confirm('确定删除这道菜?')) return;
+      try {
+        await deleteDoc(doc(db, 'dishes', id));
+      } catch (e) { alert('删除失败: ' + e.message); }
+    };
+
+    window.editDish = function(dish) {
+      document.getElementById('edit-id').value = dish.id;
+      document.getElementById('dish-name').value = dish.name;
+      document.getElementById('dish-difficulty').value = dish.difficulty;
+      document.getElementById('dish-category').value = dish.category;
+      document.getElementById('dish-time').value = dish.time;
+      document.getElementById('dish-weight').value = dish.weight || 1;
+      document.getElementById('form-title').textContent = '✏️ 编辑菜品';
+      document.getElementById('dish-name').focus();
+    };
+
+    window.resetForm = function() {
+      document.getElementById('edit-id').value = '';
+      document.getElementById('dish-name').value = '';
+      document.getElementById('dish-difficulty').value = 'easy';
+      document.getElementById('dish-category').value = 'home';
+      document.getElementById('dish-time').value = '30';
+      document.getElementById('dish-weight').value = '1';
+      document.getElementById('form-title').textContent = '➕ 添加菜品';
+    };
+
+    function renderDishes() {
+      const list = document.getElementById('dishes-list');
+      if (!dishes.length) {
+        list.innerHTML = '<div class="empty-state"><div class="icon">🍽️</div><p>还没有菜品，添加一道吧！</p></div>';
+        return;
+      }
+      list.innerHTML = dishes.map(d => `
+        <div class="dish-card">
+          <div class="dish-info">
+            <div class="dish-name">${d.name}</div>
+            <div class="dish-meta">
+              <span class="difficulty-badge diff-${d.difficulty}">${d.difficulty === 'easy' ? '🟢简单' : d.difficulty === 'medium' ? '🟡中等' : '🔴困难'}</span>
+              <span>⏱️${d.time}分钟</span>
+              <span>${d.category === 'home' ? '🏠家常' : d.category === 'quick' ? '⚡快手' : d.category === 'fancy' ? '🍖硬菜' : '🍰甜点'}</span>
+              <span>权重:${d.weight || 1}</span>
+            </div>
+          </div>
+          <div class="dish-actions">
+            <button class="btn btn-secondary" onclick='editDish(${JSON.stringify(d)})'>编辑</button>
+            <button class="btn btn-danger" onclick="deleteDish('${d.id}')">删除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderHistory(history) {
+      const list = document.getElementById('history-list');
+      if (!history.length) {
+        list.innerHTML = '<div class="empty-state" style="padding:15px;font-size:13px;">暂无记录</div>';
+        return;
+      }
+      list.innerHTML = history.map(h => {
+        const time = h.cookedAt?.toDate ? h.cookedAt.toDate() : new Date(h.cookedAt);
+        return `
+          <div class="history-item">
+            <span>🍽️ ${h.dishName}</span>
+            <span class="date">${time.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Wheel
+    const COLORS = ['#f4a261', '#e76f51', '#2a9d8f', '#e9c46a', '#264653', '#a8dadc', '#457b9d', '#f1faee'];
+    const EMOJIS = ['🍳', '🥘', '🍲', '🥗', '🍜', '🍛', '🍝', '🥟'];
+
+    let currentRotation = 0;
+    let isSpinning = false;
+
+    function drawWheel() {
+      const canvas = document.getElementById('wheel-canvas');
+      const ctx = canvas.getContext('2d');
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const radius = Math.min(cx, cy) - 10;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background circle
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#2d1f0f';
+      ctx.fill();
+      ctx.strokeStyle = '#f4a261';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      if (!dishes.length) {
+        // Empty state
+        ctx.fillStyle = '#c4a882';
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('请添加菜品', cx, cy);
+        return;
+      }
+
+      // Build weighted dish list
+      let weightedDishes = [];
+      dishes.forEach(d => {
+        const w = d.weight || 1;
+        for (let i = 0; i < w; i++) weightedDishes.push(d);
+      });
+
+      const total = weightedDishes.length;
+      const sliceAngle = (Math.PI * 2) / total;
+
+      // Draw slices
+      weightedDishes.forEach((dish, i) => {
+        const startAngle = i * sliceAngle + currentRotation;
+        const endAngle = startAngle + sliceAngle;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius - 5, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = COLORS[i % COLORS.length];
+        ctx.fill();
+        ctx.strokeStyle = '#1a1008';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Text
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(startAngle + sliceAngle / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#1a1008';
+        ctx.font = 'bold 12px sans-serif';
+        const maxLen = 10;
+        const name = dish.name.length > maxLen ? dish.name.substring(0, maxLen - 1) + '…' : dish.name;
+        ctx.fillText(name, radius - 20, 4);
+        ctx.restore();
+      });
+
+      // Center dot
+      ctx.beginPath();
+      ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+      ctx.fillStyle = '#f4a261';
+      ctx.fill();
+      ctx.strokeStyle = '#1a1008';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw decorative emojis around the wheel
+      const container = document.getElementById('wheel-container');
+      container.querySelectorAll('.wheel-emoji').forEach(e => e.remove());
+      const numEmoji = 8;
+      for (let i = 0; i < numEmoji; i++) {
+        const angle = (i / numEmoji) * Math.PI * 2 - Math.PI / 2;
+        const r = radius + 25;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        const emoji = document.createElement('div');
+        emoji.className = 'wheel-emoji';
+        emoji.textContent = EMOJIS[i % EMOJIS.length];
+        emoji.style.left = (x / canvas.offsetWidth * 100) + '%';
+        emoji.style.top = (y / canvas.offsetHeight * 100) + '%';
+        emoji.style.position = 'absolute';
+        emoji.style.transform = 'translate(-50%, -50%)';
+        emoji.style.animationDelay = (i * 0.2) + 's';
+        container.appendChild(emoji);
+      }
+
+      // Pointer
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - radius - 15);
+      ctx.lineTo(cx - 10, cy - radius - 30);
+      ctx.lineTo(cx + 10, cy - radius - 30);
+      ctx.closePath();
+      ctx.fillStyle = '#e76f51';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    window.spinWheel = function() {
+      if (isSpinning || !dishes.length) return;
+
+      // Build weighted list
+      let weightedDishes = [];
+      dishes.forEach(d => {
+        for (let i = 0; i < (d.weight || 1); i++) weightedDishes.push(d);
+      });
+
+      const canvas = document.getElementById('wheel-canvas');
+      const total = weightedDishes.length;
+      const sliceAngle = (Math.PI * 2) / total;
+
+      // Pick random dish
+      const winnerIndex = Math.floor(Math.random() * total);
+      const winner = weightedDishes[winnerIndex];
+
+      // Calculate target angle (pointer at top = -PI/2, need to land on winnerIndex)
+      const targetAngle = -winnerIndex * sliceAngle - sliceAngle / 2 + Math.PI / 2;
+      const extraSpins = 5 * Math.PI * 2; // 5 full rotations
+      const targetRotation = currentRotation + extraSpins + targetAngle - (currentRotation % (Math.PI * 2));
+
+      isSpinning = true;
+      canvas.classList.add('spinning');
+      canvas.style.transform = `rotate(${targetRotation}rad)`;
+      currentRotation = targetRotation;
+
+      // Show result after animation
+      setTimeout(() => {
+        isSpinning = false;
+        canvas.classList.remove('spinning');
+        showResult(winner);
+      }, 4100);
+    };
+
+    window.showResult = function(dish) {
+      document.getElementById('result-name').textContent = dish.name;
+      const diffMap = { easy: '🟢简单', medium: '🟡中等', hard: '🔴困难' };
+      const catMap = { home: '🏠家常', quick: '⚡快手', fancy: '🍖硬菜', dessert: '🍰甜点' };
+      document.getElementById('result-difficulty').textContent = diffMap[dish.difficulty];
+      document.getElementById('result-time').textContent = `⏱️${dish.time}分钟`;
+      document.getElementById('result-category').textContent = catMap[dish.category];
+      document.getElementById('result-modal').dataset.dishId = dish.id;
+      document.getElementById('result-modal').dataset.dishName = dish.name;
+      document.getElementById('result-modal').classList.add('show');
+    };
+
+    window.cookThis = async function() {
+      if (!db || !currentUser) return;
+      const modal = document.getElementById('result-modal');
+      const dishName = modal.dataset.dishName;
+      try {
+        await addDoc(collection(db, 'history'), {
+          userId: currentUser.uid,
+          dishName,
+          cookedAt: serverTimestamp()
+        });
+        closeModal();
+      } catch (e) { alert('记录失败: ' + e.message); }
+    };
+
+    window.closeModal = function() {
+      document.getElementById('result-modal').classList.remove('show');
+    };
+
+    window.showPage = function(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+      document.getElementById(page + '-page').classList.add('active');
+      event.target.classList.add('active');
+    };
+
+    // Init
+    initFirebase();
+    drawWheel();
+  </script>
+</body>
+</html>
