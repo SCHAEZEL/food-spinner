@@ -661,6 +661,10 @@
 
       if (!name) { alert('请输入菜名'); return; }
 
+      // 去重检查：同名菜品不可重复添加
+      const isDuplicate = dishes.some(d => d.name.trim() === name && !id);
+      if (isDuplicate) { alert('这道菜已经在菜谱里了！'); return; }
+
       try {
         if (id) {
           await updateDoc(doc(db, 'dishes', id), { name, difficulty, category, time, weight });
