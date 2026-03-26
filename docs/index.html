@@ -13,8 +13,8 @@
       --bg: #1a1008;
       --card: #2d1f0f;
       --card-light: #3d2a14;
-      --text: #fff8f0;
-      --text-muted: #c4a882;
+      --text: #e8d5b0;
+      --text-muted: #a08060;
     }
 
     body {
@@ -637,15 +637,23 @@
 
     function subscribeToHistory() {
       if (unsubscribeHistory) unsubscribeHistory();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       const q = query(
         collection(db, 'history'),
-        where('userId', '==', currentUser.uid),
-        where('cookedAt', '>=', today)
+        where('userId', '==', currentUser.uid)
       );
       unsubscribeHistory = onSnapshot(q, snapshot => {
-        const history = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        let history = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        // 只显示今天的记录，客户端过滤
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        history = history.filter(h => {
+          const t = h.cookedAt?.toDate ? h.cookedAt.toDate() : new Date(h.cookedAt);
+          return t >= today;
+        }).sort((a, b) => {
+          const ta = a.cookedAt?.toDate ? a.cookedAt.toDate() : new Date(a.cookedAt);
+          const tb = b.cookedAt?.toDate ? b.cookedAt.toDate() : new Date(b.cookedAt);
+          return tb - ta;
+        });
         renderHistory(history);
       });
     }
