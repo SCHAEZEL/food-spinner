@@ -627,7 +627,7 @@
     // Dishes CRUD
     function subscribeToDishes() {
       if (unsubscribeDishes) unsubscribeDishes();
-      const q = query(collection(db, 'dishes'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc'));
+      const q = query(collection(db, 'dishes'), where('userId', '==', currentUser.uid));
       unsubscribeDishes = onSnapshot(q, snapshot => {
         dishes = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         drawWheel();
@@ -642,8 +642,7 @@
       const q = query(
         collection(db, 'history'),
         where('userId', '==', currentUser.uid),
-        where('cookedAt', '>=', today),
-        orderBy('cookedAt', 'desc')
+        where('cookedAt', '>=', today)
       );
       unsubscribeHistory = onSnapshot(q, snapshot => {
         const history = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
