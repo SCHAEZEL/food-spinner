@@ -139,8 +139,23 @@
     #wheel-container {
       position: relative;
       width: min(70vw, 400px);
-      height: min(77vw, 440px);
+      height: min(70vw, 400px);
       margin: 20px auto;
+    }
+
+    #wheel-pointer {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 28px solid #e76f51;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
+      z-index: 10;
+      pointer-events: none;
     }
 
     #wheel-canvas {
@@ -468,7 +483,8 @@
       </div>
 
       <div id="wheel-container">
-        <canvas id="wheel-canvas" width="400" height="440"></canvas>
+        <canvas id="wheel-canvas" width="400" height="400"></canvas>
+        <div id="wheel-pointer"></div>
       </div>
 
       <button id="spin-btn" onclick="spinWheel()" disabled>🎲 开始旋转</button>
@@ -859,17 +875,6 @@
         container.appendChild(emoji);
       }
 
-      // Pointer
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - radius - 15);
-      ctx.lineTo(cx - 10, cy - radius - 30);
-      ctx.lineTo(cx + 10, cy - radius - 30);
-      ctx.closePath();
-      ctx.fillStyle = '#e76f51';
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
     }
 
     window.spinWheel = function() {
