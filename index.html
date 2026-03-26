@@ -894,10 +894,16 @@
       const winnerIndex = Math.floor(Math.random() * total);
       const winner = weightedDishes[winnerIndex];
 
-      // Calculate target angle (pointer at top = -PI/2, need to land on winnerIndex)
-      const targetAngle = -winnerIndex * sliceAngle - sliceAngle / 2 + Math.PI / 2;
+      // Normalize to [0, 2π)
+      const norm = (a) => ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      // winnerAngle is the ANGLE of winning slice in wheel coords
+      const winnerAngle = (winnerIndex + 0.5) * sliceAngle;
+      // The winning slice's CURRENT angle in CSS space = normalize(winnerAngle + currentRotation)
+      // We need: winnerAngle + currentRotation + delta ≡ 0 (mod 2π)
+      // delta = -normalize(winnerAngle + currentRotation)
+      const delta = -norm(winnerAngle + currentRotation);
       const extraSpins = 5 * Math.PI * 2; // 5 full rotations
-      const targetRotation = currentRotation + extraSpins + targetAngle - (currentRotation % (Math.PI * 2));
+      const targetRotation = currentRotation + extraSpins + delta;
 
       isSpinning = true;
       canvas.classList.add('spinning');

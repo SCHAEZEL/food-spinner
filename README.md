@@ -3,6 +3,7 @@
 让命运决定你的晚餐！一个简单有趣的随机选餐工具。
 
 **🌐 在线地址**：https://schaezel.github.io/food-spinner/
+
 **📂 GitHub**：https://github.com/SCHAEZEL/food-spinner
 
 ## 功能
