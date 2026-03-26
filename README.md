@@ -42,6 +42,17 @@ https://schaezel.github.io/food-spinner/
 - HTML5 Canvas
 - GitHub Pages
 
+## 免费托管方案对比
+
+| 方案 | 流量 | 私有仓库 | 自动部署 | 绑定信用卡 |
+|------|------|---------|---------|-----------|
+| **GitHub Pages** | 无限 | ❌ | ✅ | ❌ |
+| **Vercel** | 100GB/月 | ✅ | ✅ | ⚠️ 需绑定 |
+| **Cloudflare Pages** | 无限 | ✅ | ✅ | ❌ |
+| **Netlify** | 100GB/月 | ✅ | ✅ | ⚠️ 需绑定 |
+
+> 当前使用 **GitHub Pages**，免费无限流量，无需信用卡。
+
 ## 界面预览
 
 - 🎨 深棕黑背景 + 橙/红橙配色
